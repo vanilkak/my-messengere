@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мессенджер</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Чат</h1>
+        <div id="chat" class="chat-box"></div>
+        <div class="input-area">
+            <input type="text" id="user" placeholder="Ваше имя" value="Гость">
+            <input type="text" id="message" placeholder="Ваше сообщение">
+            <button id="send">Отправить</button>
+        </div>
+    </div>
+
+    <script>
+        // Элементы интерфейса
+        const chatBox = document.getElementById('chat');
+        const messageInput = document.getElementById('message');
+        const sendButton = document.getElementById('send');
+        const userInput = document.getElementById('user');
+
+        // Базовый URL API
+        const API_URL = window.location.origin;
+
+        // Загрузка сообщений
+        async function loadMessages() {
+            try {
+                const response = await fetch(`${API_URL}/api/get`);
+                const data = await response.json();
+                renderMessages(data.messages);
+            } catch (error) {
+                console.error("Ошибка загрузки:", error);
+            }
+        }
+
+        // Отправка сообщения
+        async function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text) return;
+
+            try {
+                await fetch(`${API_URL}/api/send`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user: userInput.value,
+                        text: text
+                    })
+                });
+                messageInput.value = '';
+                loadMessages();
+            } catch (error) {
+                alert("Ошибка отправки!");
+            }
+        }
+
+        // Отображение сообщений
+        function renderMessages(messages) {
+            chatBox.innerHTML = messages.map(msg => `
+                <div class="message ${msg.user === userInput.value ? 'outgoing' : 'incoming'}">
+                    <span class="user">${msg.user}</span>
+                    <div class="text">${msg.text}</div>
+                    <span class="time">${msg.time}</span>
+                </div>
+            `).join('');
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // Обработчики событий
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // Автообновление каждые 2 секунды
+        setInterval(loadMessages, 2000);
+        
+        // Первоначальная загрузка
+        loadMessages();
+    </script>
+</body>
+</html>
